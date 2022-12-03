@@ -1,0 +1,1 @@
+backgroundColor: IIF($datapoint["objectid"]%2==0,'black',''),
