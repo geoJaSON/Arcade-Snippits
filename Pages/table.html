@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id="editor"></div>
+
+<button onclick="submitData()">Submit</button>
+
+<div id="message"></div>
+
+<script src="https://redi-corps.usace.army.mil/sites/ucop/Shared%20Documents/DCO/Blue-Roof/HTML/ckeditor/ckeditor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+
+<script>
+const QUERY_API_URL = 'https://arcportal-ucop-corps.usace.army.mil/s0arcgis/rest/services/Hosted/POD_Dash/FeatureServer/5/query?where=OBJECTID%3D1&outFields=*&f=json';
+const UPDATE_API_URL = 'https://arcportal-ucop-corps.usace.army.mil/s0arcgis/rest/services/Hosted/POD_Dash/FeatureServer/5/updateFeatures';
+const ADD_API_URL = 'https://arcportal-ucop-corps.usace.army.mil/s0arcgis/rest/services/Hosted/POD_Dash/FeatureServer/5/addFeatures';
+
+let data = [];
+let container = document.getElementById('editor');
+
+// Create Handsontable instance
+let hot = new Handsontable(container, {
+    data: data,
+    rowHeaders: true,
+    colHeaders: ['Column 1', 'Column 2', 'Column 3'], // Replace with your real column headers
+    contextMenu: true
+});
+
+fetch(QUERY_API_URL)
+.then(response => response.json())
+.then(respData => {
+    let records = respData.features;
+    records.forEach(record => {
+        data.push(record.attributes); // Assuming your data is in the attributes property
+    });
+
+    // Render table with the fetched data
+    hot.render();
+});
+
+function submitData() {
+    let changes = hot.getData(); // Get data changes
+    // For each row, build the features array and call the appropriate update or add endpoint
+    changes.forEach(change => {
+        // Use the record's objectid property to decide whether to call update or add
+        let feature = {
+            "attributes": {
+                // Replace with your real attribute names and the changed data
+                "attribute1": change[0],
+                "attribute2": change[1],
+                "attribute3": change[2]
+            }
+        };
+
+        let url = feature.attributes.objectid ? UPDATE_API_URL : ADD_API_URL;
+        let formData = new URLSearchParams();
+        formData.append('f', 'json');
+        formData.append('features', JSON.stringify([feature]));
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Data successfully posted');
+            } else {
+                showMessage('Failed to post data');
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            showMessage('Error: ' + error);
+        });
+    });
+}
+
+function showMessage(message) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = message;
+}
+</script>
+
+</body>
+</html>

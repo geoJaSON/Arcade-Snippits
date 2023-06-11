@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="https://handsontable.com/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@10.0.0/dist/handsontable.full.min.js"></script>
+
+
+</head>
+
+<body>
+
+    <div id="spreadsheet"></div>
+
+
+    <script>
+        const example = document.getElementById("handsontable");
+        const data = [
+            [
+                'Sun Jun 1',
+            ],
+            [
+                'Mon Jun 2'
+            ]
+        ]
+
+        new Handsontable(example, {
+            data,
+            height: 450,
+            colWidths: [140, 126, 192, 100, 100, 90, 90, 110, 97],
+            colHeaders: [
+                "Company name",
+                "Country",
+                "Name",
+                "Sell date",
+                "Order ID",
+                "In stock",
+                "Qty",
+                "Progress",
+                "Rating"
+            ],
+            columns: [{
+                data: 1,
+                type: "text"
+            }, {
+                data: 2,
+                type: "text"
+            }, {
+                data: 3,
+                type: "text"
+            }, {
+                data: 4,
+                type: "date",
+                allowInvalid: false
+            }, {
+                data: 5,
+                type: "text"
+            }, {
+                data: 6,
+                type: "checkbox",
+                className: "htCenter"
+            }, {
+                data: 7,
+                type: "numeric"
+            }, {
+                data: 8,
+                readOnly: true,
+                className: "htMiddle"
+            }, {
+                data: 9,
+                readOnly: true,
+                className: "star htCenter"
+            }],
+            dropdownMenu: true,
+            hiddenColumns: {
+                indicators: true
+            },
+            contextMenu: true,
+            multiColumnSorting: true,
+            filters: true,
+            rowHeaders: true,
+            manualRowMove: true,
+            licenseKey: "non-commercial-and-evaluation"
+        });
+    </script>
+
+</body>
+
+</html>

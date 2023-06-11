@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="https://handsontable.com/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@10.0.0/dist/handsontable.full.min.js"></script>
+
+
+</head>
+
+<body>
+
+
+
+    <script>
+        var federalHolidays = ["2023-06-09", "2023-07-04", "2023-12-25"]; // Add more dates as needed
+
+        // Function to get dates for the current week
+        function getWeekDates() {
+            var now = new Date();
+            var dayOfWeek = now.getDay();
+            var numDay = now.getDate();
+
+            var start = new Date(now);
+            start.setDate(numDay - dayOfWeek);
+
+            var dates = [];
+            for (var i = 0; i < 7; i++) {
+                var newDate = new Date(start);
+                newDate.setDate(newDate.getDate() + i);
+                dates.push(newDate);
+            }
+
+            return dates;
+        }
+
+        // Convert date to DDD format
+        function dateToDay(date) {
+            const day = date.toString().split(' ')[0].toUpperCase();
+            const dayMonth = date.toLocaleDateString("en-US", {
+                month: 'short',
+                day: 'numeric'
+            }).toUpperCase();
+            return `${day} ${dayMonth}`;
+        }
+
+        // Validate time input
+        function validateTime(timeString) {
+            const timeRegex = /^([01]?[0-9]|2[0-3])[0-5][0-9]$/;
+            return timeRegex.test(timeString);
+        }
+
+        // New function to calculate night differential
+        function calculateNightDiff(timeIn, timeOut) {
+            var nightStart = 1800; // 6:00 PM in 24-hour format
+            var nightHours = 0;
+
+            if (timeIn > nightStart) {
+                nightHours = (timeOut - timeIn) / 100;
+            } else if (timeOut > nightStart) {
+                nightHours = (timeOut - nightStart) / 100;
+            }
+
+            return nightHours;
+        }
+
+        // Data for the spreadsheet
+        var weekDates = getWeekDates();
+        var data = weekDates.map(date => [dateToDay(date), "", "", "", "", "", "", "", "", "", ""])
+
+        // Create the spreadsheet
+        new Handsontable(document.getElementById('spreadsheet'), {
+            data: data,
+            rowHeaders: true,
+            colHeaders: ['Day', 'Time In', 'Lunch Out', 'Lunch In', 'Time Out', 'Annual Leave', 'Sick Leave', 'Holiday Leave', 'Total Hours', 'Regular Hours', 'Overtime Hours', 'Holiday Worked', 'Night Differential'],
+            columns: [{
+                type: 'text',
+                readOnly: true
+            }, {
+                type: 'text'
+            }, {
+                type: 'text'
+            }, {
+                type: 'text'
+            }, {
+                type: 'text'
+            }, {
+                type: 'numeric'
+            }, {
+                type: 'numeric'
+            }, {
+                type: 'numeric'
+            }, {
+                type: 'numeric',
+                readOnly: true
+            }, {
+                type: 'numeric',
+                readOnly: true
+            }, {
+                type: 'numeric',
+                readOnly: true
+            }, {
+                type: 'numeric',
+                readOnly: true
+            }, {
+                type: 'numeric',
+                readOnly: true
+            }]
+        });
+    </script>
+
+</body>
+
+</html>

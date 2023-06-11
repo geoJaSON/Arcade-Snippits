@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Highcharts Demo</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+	   	<style>
+        body, html, #container {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+
+<script>
+// Days array
+var days = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14"];
+var urlBase = 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/ahps_riv_gauges/MapServer/';
+var statusCounts = {};
+days.forEach(function(day) {
+    statusCounts["day"+day] = {};
+});
+
+var requests = days.map(function(day, index) {
+    var url = urlBase + day + '/query?where=gaugelid+IN+%28%27AMCK1%27%2C%27ATOK1%27%2C%27AVTO2%27%2C%27BCCM7%27%2C%27BIRO2%27%2C%27BMTA4%27%2C%27BRLK1%27%2C%27BSGM7%27%2C%27BVLO2%27%2C%27BXTK1%27%2C%27CFVK1%27%2C%27CHTM7%27%2C%27CLRO2%27%2C%27CNUK1%27%2C%27COMO2%27%2C%27CPLO2%27%2C%27CTOO2%27%2C%27CVLO2%27%2C%27CWSK1%27%2C%27CWYO2%27%2C%27DANA4%27%2C%27DARA4%27%2C%27ECLK1%27%2C%27ELDO2%27%2C%27ELFK1%27%2C%27ELMA4%27%2C%27EMPK1%27%2C%27EPRK1%27%2C%27EREK1%27%2C%27FLLK1%27%2C%27FLRK1%27%2C%27FRNK1%27%2C%27GIBO2%27%2C%27GORO2%27%2C%27GRVA4%27%2C%27HEYO2%27%2C%27HJFA4%27%2C%27HSKO2%27%2C%27HUSA4%27%2C%27IDPK1%27%2C%27INCM7%27%2C%27IOLK1%27%2C%27JNKO2%27%2C%27JOPM7%27%2C%27JRLK1%27%2C%27KERO2%27%2C%27KEYO2%27%2C%27KNSO2%27%2C%27LEPO2%27%2C%27LITA4%27%2C%27LSGM7%27%2C%27LVNO2%27%2C%27MCNK1%27%2C%27MFDO2%27%2C%27MKGO2%27%2C%27MLBA4%27%2C%27MLBK1%27%2C%27MORA4%27%2C%27NEOK1%27%2C%27NFSM7%27%2C%27NMLA4%27%2C%27NNEO2%27%2C%27NSOK1%27%2C%27OKEO2%27%2C%27OOLO2%27%2C%27OSWK1%27%2C%27OWSO2%27%2C%27OZGA4%27%2C%27PANO2%27%2C%27PBFA4%27%2C%27PENO2%27%2C%27PKVK1%27%2C%27PLYK1%27%2C%27PPFK1%27%2C%27PTAO2%27%2C%27QUAO2%27%2C%27RAMO2%27%2C%27SKLO2%27%2C%27SLAM7%27%2C%27SLSA4%27%2C%27SPEO2%27%2C%27SVYA4%27%2C%27TALO2%27%2C%27TIFM7%27%2C%27TLSO2%27%2C%27TODA4%27%2C%27TRLK1%27%2C%27VBRA4%27%2C%27VBUA4%27%2C%27WCOM7%27%2C%27WSLO2%27%2C%27WTTO2%27%29&outFields=status&f=pjson';
+return $.getJSON(url, function(data) {
+        data.features.forEach(function(gauge) {
+            var status = gauge.attributes.status;
+            statusCounts["day"+day][status] = statusCounts["day"+day][status] ? statusCounts["day"+day][status] + 1 : 1;
+        });
+    });
+});
+
+$.when.apply($, requests).then(function() {
+    // All requests have completed, draw the chart
+    drawChart();
+});
+
+function drawChart() {
+    // Mapping object for status aliases
+    var statusAliases = {
+        "no_forecast": "No Forecast",
+		"fcst_not_current": "Forecast Not Current",
+		"no_flooding": "No Flooding",
+		"minor_flood": "Minor Flood"
+		
+        // Add other status aliases here...
+    };
+
+    // Mapping object for x-axis label aliases
+    var xAxisLabelAliases = {
+        "day1": "1",
+        "day2": "2",
+		"day3": "3",
+		"day4": "4",
+		"day5": "5",
+		"day6": "6",
+		"day7": "7",
+		"day8": "8",
+		"day9": "9",
+		"day10": "10",
+		"day11": "11",
+		"day12": "12",
+		"day13": "13",
+		"day14": "14",
+        // Add other label aliases here...
+    };
+
+    // Get unique statuses
+    var allStatuses = Object.values(statusCounts).flatMap(Object.keys);
+    var uniqueStatuses = [...new Set(allStatuses)];
+
+    var seriesData = uniqueStatuses.map(function(status) {
+        var data = days.map(function(day) {
+            return statusCounts["day"+day][status] || 0;
+        });
+        return {
+            name: statusAliases[status] || status,  // Use status alias if available
+            data: data
+        };
+    });
+
+    Highcharts.chart('container', {
+        chart: {
+		
+            type: 'line',
+			backgroundColor: '#f9f8f8'
+        },
+		credits: {
+    enabled: false
+  },
+        title: {
+            text: null
+			
+        },
+        xAxis: {
+            categories: days.map(day => xAxisLabelAliases["day"+day] || "day"+day)  // Use label alias if available
+        },
+        series: seriesData
+    });
+}
+
+
+</script>
+</body>
+</html>

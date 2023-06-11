@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="https://bossanova.uk/jexcel/v4/jexcel.css">
+    <link rel="stylesheet" href="https://bossanova.uk/jsuites/v2/jsuites.css" type="text/css" />
+    <script src="https://bossanova.uk/jexcel/v4/jexcel.js"></script>
+    <script src="https://bossanova.uk/jsuites/v2/jsuites.js"></script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        label {
+            margin-top: 20px;
+        }
+        
+        #spreadsheet {
+            margin-top: 20px;
+        }
+        
+        .jexcel>thead th {
+            word-wrap: break-word;
+            height: 60px;
+            /* Adjust as necessary */
+            line-height: 30px;
+            /* Adjust as necessary */
+        }
+    </style>
+</head>
+
+<body>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name">
+
+    <label for="labor-code">Labor Code:</label>
+    <input type="text" id="labor-code" name="labor-code">
+
+    <label for="event">Event:</label>
+    <select id="event" name="event">
+    <option value="event1">Event 1</option>
+    <option value="event2">Event 2</option>
+    <option value="event3">Event 3</option>
+    <!-- Add more events as needed -->
+  </select>
+
+    <div id="spreadsheet"></div>
+    <button id="submit-btn" type="button">Submit</button>
+    <div id="result"></div>
+    <script>
+        var federalHolidays = ["2023-06-09", "2023-07-04", "2023-12-25"]; // Add more dates as needed
+
+        // Function to get dates for the current week
+        function getWeekDates() {
+            var now = new Date();
+            var dayOfWeek = now.getDay();
+            var numDay = now.getDate();
+
+            var start = new Date(now);
+            start.setDate(numDay - dayOfWeek);
+
+            var dates = [];
+            for (var i = 0; i < 7; i++) {
+                var newDate = new Date(start);
+                newDate.setDate(newDate.getDate() + i);
+                dates.push(newDate);
+            }
+
+            return dates;
+        }
+
+        // Convert date to DDD format
+        function dateToDay(date) {
+            const day = date.toString().split(' ')[0].toUpperCase();
+            const dayMonth = date.toLocaleDateString("en-US", {
+                month: 'short',
+                day: 'numeric'
+            }).toUpperCase();
+            return `${day} ${dayMonth}`;
+        }
+
+        // Validate time input
+        function validateTime(timeString) {
+            const timeRegex = /^([01]?[0-9]|2[0-3])[0-5][0-9]$/;
+            return timeRegex.test(timeString);
+        }
+
+        // New function to calculate night differential
+        function calculateNightDiff(timeIn, timeOut) {
+            var nightStart = 1800; // 6:00 PM in 24-hour format
+            var nightHours = 0;
+
+            if (timeIn > nightStart) {
+                nightHours = (timeOut - timeIn) / 100;
+            } else if (timeOut > nightStart) {
+                nightHours = (timeOut - nightStart) / 100;
+            }
+
+            return nightHours;
+        }
+
+        // Data for the spreadsheet
+        var weekDates = getWeekDates();
+        var data = weekDates.map(date => [dateToDay(date), "", "", "", "", "", "", "", "", "", ""])
+
+        // Create the spreadsheet
+        var table = jexcel(document.getElementById('spreadsheet'), {
+            data: data,
+            columns: [{
+                type: 'text',
+                title: 'Day',
+                width: 120,
+                readOnly: true
+            }, {
+                type: 'text',
+                title: 'Time In',
+                width: 100
+            }, {
+                type: 'text',
+                title: 'Lunch Out',
+                width: 100
+            }, {
+                type: 'text',
+                title: 'Lunch In',
+                width: 100
+            }, {
+                type: 'text',
+                title: 'Time Out',
+                width: 100
+            }, {
+                type: 'numeric',
+                title: 'Annual Leave',
+                width: 100
+            }, {
+                type: 'numeric',
+                title: 'Sick Leave',
+                width: 100
+            }, {
+                type: 'numeric',
+                title: 'Holiday Leave',
+                width: 100
+            }, {
+                type: 'numeric',
+                title: 'Total Hours',
+                width: 100,
+                readOnly: true
+            }, {
+                type: 'numeric',
+                title: 'Regular Hours',
+                width: 100,
+                readOnly: true
+            }, {
+                type: 'numeric',
+                title: 'Overtime Hours',
+                width: 100,
+                readOnly: true
+            }, {
+                type: 'numeric',
+                title: 'Holiday Worked',
+                width: 100,
+                readOnly: true
+            }, {
+                type: 'numeric',
+                title: 'Night Differential',
+                width: 100,
+                readOnly: true
+            }],
+
+            onchange: function(instance, cell, x, y, value) {
+                if (x > 0 && x < 8 && y < 7) {
+                    const day = instance.jexcel.getValueFromCoords(0, y);
+                    let timeIn = instance.jexcel.getValueFromCoords(1, y);
+                    let lunchOut = instance.jexcel.getValueFromCoords(2, y);
+                    let lunchIn = instance.jexcel.getValueFromCoords(3, y);
+                    let timeOut = instance.jexcel.getValueFromCoords(4, y);
+                    const annualLeave = instance.jexcel.getValueFromCoords(5, y) || 0;
+                    const sickLeave = instance.jexcel.getValueFromCoords(6, y) || 0;
+                    const holidayLeave = instance.jexcel.getValueFromCoords(7, y) || 0;
+
+                    if (validateTime(timeIn) && validateTime(lunchOut) && validateTime(lunchIn) && validateTime(timeOut)) {
+                        const timeInDate = new Date('1970/01/01 ' + timeIn.slice(0, 2) + ":" + timeIn.slice(2, 4));
+                        const lunchOutDate = new Date('1970/01/01 ' + lunchOut.slice(0, 2) + ":" + lunchOut.slice(2, 4));
+                        const lunchInDate = new Date('1970/01/01 ' + lunchIn.slice(0, 2) + ":" + lunchIn.slice(2, 4));
+                        const timeOutDate = new Date('1970/01/01 ' + timeOut.slice(0, 2) + ":" + timeOut.slice(2, 4));
+
+                        const totalHours = ((lunchOutDate.getTime() - timeInDate.getTime()) +
+                            (timeOutDate.getTime() - lunchInDate.getTime())) / 36e5;
+
+                        instance.jexcel.setValueFromCoords(8, y, totalHours, true);
+
+                        let regularHours = 0;
+                        let overtimeHours = 0;
+
+                        if (day.includes("SAT") || day.includes("SUN")) {
+                            overtimeHours = totalHours;
+                        } else {
+                            regularHours = totalHours > 8 ? 8 : totalHours;
+                            overtimeHours = totalHours > 8 ? totalHours - 8 : 0;
+                        }
+
+                        const totalLeave = Number(annualLeave) + Number(sickLeave) + Number(holidayLeave);
+                        const date = new Date(day.split(' ')[1] + ' ' + day.split(' ')[2] + ' ' + new Date().getFullYear());
+                        var holidayHours = 0;
+                        if (federalHolidays.includes(date.toISOString().split('T')[0])) {
+                            holidayHours = regularHours;
+                            regularHours = 0;
+                        }
+
+                        regularHours -= totalLeave;
+                        if (regularHours < 0) {
+                            overtimeHours += regularHours;
+                            regularHours = 0;
+                        }
+
+                        instance.jexcel.setValueFromCoords(8, y, totalHours, true);
+                        instance.jexcel.setValueFromCoords(9, y, regularHours, true);
+                        instance.jexcel.setValueFromCoords(10, y, overtimeHours, true);
+                        instance.jexcel.setValueFromCoords(11, y, holidayHours, true);
+                    }
+                }
+                if (x > 0 && x < 5) {
+                    const timeIn = instance.jexcel.getValueFromCoords(1, y);
+                    const timeOut = instance.jexcel.getValueFromCoords(4, y);
+
+                    if (validateTime(timeIn) && validateTime(timeOut)) {
+                        const nightDiff = calculateNightDiff(timeIn, timeOut);
+                        instance.jexcel.setValueFromCoords(12, y, nightDiff, true);
+                    }
+                }
+
+            }
+        });
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            var tableData = table.getJson(false);
+            var geojson = [];
+
+            tableData.forEach(function(item) {
+                var geojsonItem = {
+                    'attributes': {
+
+                        'name': document.getElementById('name').value,
+                        'laborcode': document.getElementById('labor-code').value,
+                        'event': document.getElementById('event').value,
+                        'workdate': item['0'],
+                        'timein': item['1'],
+                        'lunchout': item['2'],
+                        'lunchin': item['3'],
+                        'timeout': item['4'],
+                        'annualleave': item['8'],
+                        'sickleave': item['9'],
+                        'holidayleave': item['10'],
+                        'totalhours': item['11'],
+                        'regularhours': item['12'],
+                        'overtimehours': item['8'],
+                        'holidayworked': item['9'],
+                        'nightdiff': item['10']
+                    }
+                };
+
+                geojson.push(geojsonItem);
+            });
+            var serviceUrl = 'https://your-service-url/FeatureServer/0/addFeatures';
+
+            // Create the request payload
+            var requestPayload = {
+                f: 'json',
+                features: geojson
+            };
+            fet = {
+                url: serviceUrl,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestPayload)
+            }
+
+            var resultElement = document.getElementById('result');
+            resultElement.textContent = JSON.stringify(fet);
+
+        });
+    </script>
+
+</body>
+
+</html>

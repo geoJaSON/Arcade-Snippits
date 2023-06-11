@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treegraph from JSON Source</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/treemap.js"></script>
+    <script src="https://code.highcharts.com/modules/treegraph.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script>
+    $(document).ready(function() {
+	const url = "https://arcportal-ucop-corps.usace.army.mil/esf3/rest/services/TempRoofing/BRMS_Personnel/FeatureServer/0/query?where=missionactive='Active'&outFields=*&returnGeometry=false&f=pjson";
+        // Fetch the data from a JSON source
+        $.getJSON(url, function(response) {
+    const data = [];
+    const roles = new Set();
+    const teams = new Set();
+
+    response.features.forEach(feature => {
+        const attributes = feature.attributes;
+
+        // Add the role to the data array if it hasn't been added yet
+        const role = attributes.userrole;
+        if (role && !roles.has(role)) {
+            data.push({
+                id: role,
+                name: role
+            });
+            roles.add(role);
+        }
+
+        // Add the team to the data array if it hasn't been added yet
+        const team = attributes.team;
+        if (team && !teams.has(team)) {
+            data.push({
+                id: team,
+                name: team,
+                parent: 'QA'  // The parent of all teams is "QA"
+            });
+            teams.add(team);
+        }
+
+        // Add the individual person to the data array
+        data.push({
+            id: attributes.globalid,
+            name: attributes.name,
+            parent: team || role  // The parent is the team if it exists, otherwise the role
+        });
+    });
+
+    // Call createChart with the constructed data
+    createChart(data);
+});
+
+
+        // Create the chart using the fetched data
+        function createChart(data) {
+            Highcharts.chart('container', {
+			chart: {
+			},
+                title: {
+                    text: 'Blue Roof Personnel'
+                },
+				exporting: {
+								enabled: false
+							},
+								credits: {
+						enabled: false
+					  },
+                series: [
+                    {
+                        type: 'treegraph',
+                        data,
+                        tooltip: {
+                            pointFormat: '{point.name}'
+                        },
+
+                        marker: {
+                            symbol: 'rect',
+                            width: '10%'
+							
+                        },
+						point: {
+            events: {
+                click: function () {
+                    const url = `https://survey123.arcgis.com/share/dff273686414443d9acaed48770cb5bb?portalUrl=https://arcportal-ucop-corps.usace.army.mil/s0portal&mode=edit&globalId=${this.id}&hide=header,navbar,footer,leaveDialog&autoRefresh=true`;
+                    window.open(url)
+                }
+            }
+        },
+                        borderRadius: 10,
+                        dataLabels: {
+        pointFormat: '{point.name}',
+        style: {
+          whiteSpace: 'nowrap'
+        }
+      },
+                        levels: [
+                            {
+                                level: 1,
+                                levelIsConstant: false
+                            },
+                            {
+                                level: 2,
+                                colorByPoint: true
+                            },
+                            {
+                                level: 3,
+                                colorVariation: {
+                                    key: 'brightness',
+                                    to: -0.5
+                                }
+                            },
+                            {
+                                level: 4,
+                                colorVariation: {
+                                    key: 'brightness',
+                                    to: 0.5
+                                }
+                            }
+                        ]
+                    }
+                ]
+            });
+        }
+    });
+    </script>
+</body>
+</html>
