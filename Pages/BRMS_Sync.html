@@ -216,13 +216,22 @@
                                 var key = Object.keys(cumulativeData)[index];
 
                                 // Round down to the nearest 6 hours
-                                var hours = Math.floor(dateObj.getHours() / 1) * 1;
+                                var hours = Math.floor(dateObj.getHours() / 24) * 1;
                                 dateObj.setHours(hours);
                                 dateObj.setMinutes(0);
                                 dateObj.setSeconds(0);
                                 dateObj.setMilliseconds(0);
 
-                                cumulativeData[key].push([dateObj.getTime(), 1]);
+                                // Find if this timestamp already exists in the array
+                                var existingEntry = cumulativeData[key].find(entry => entry[0] === dateObj.getTime());
+
+                                if (existingEntry) {
+                                    // If it exists, increase the count
+                                    existingEntry[1]++;
+                                } else {
+                                    // If it doesn't exist, create a new entry
+                                    cumulativeData[key].push([dateObj.getTime(), 1]);
+                                }
                             }
                         });
                     });
@@ -239,6 +248,7 @@
 
                     createChart();
                 }
+
 
                 function requestData() {
                     $.ajax({
@@ -258,7 +268,6 @@
                     });
                 }
 
-                console.log(cumulativeData.created_date)
 
                 function createChart() {
                     Highcharts.chart('line-chart-container', {

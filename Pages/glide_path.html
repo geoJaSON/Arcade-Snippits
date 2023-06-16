@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Scrolling Marquee</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://code.highcharts.com/highcharts.js"></script>
-	<style>
-        body, html, #container {
+    <style>
+        body,
+        html,
+        #container {
             height: 100%;
             margin: 0;
             overflow: hidden;
         }
     </style>
 </head>
+
 <body>
     <marquee id="marquee" behavior="scroll" direction="left" scrollamount="5"></marquee>
 
     <div id="container"></div>
 
     <script>
-        $(document).ready(function(){
+        $(document).ready(function() {
             var cumulativeData = {
                 created_date: [],
                 dateqacomplete: [],
@@ -32,25 +36,42 @@
                 data.features.forEach(function(feature) {
                     var attr = feature.attributes;
                     var dates = [
-                        attr.created_date, 
-                        attr.dateqacomplete, 
-                        attr.datesenttocontractor, 
+                        attr.created_date,
+                        attr.dateqacomplete,
+                        attr.datesenttocontractor,
                         attr.datecontractorcomplete
                     ];
                     dates.forEach(function(date, index) {
                         if (date) {
                             var dateObj = new Date(date);
                             var key = Object.keys(cumulativeData)[index];
-                            cumulativeData[key].push([Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()), 1]);
+
+                            // Round down to the nearest 6 hours
+                            var hours = Math.floor(dateObj.getHours() / 24) * 1;
+                            dateObj.setHours(hours);
+                            dateObj.setMinutes(0);
+                            dateObj.setSeconds(0);
+                            dateObj.setMilliseconds(0);
+
+                            // Find if this timestamp already exists in the array
+                            var existingEntry = cumulativeData[key].find(entry => entry[0] === dateObj.getTime());
+
+                            if (existingEntry) {
+                                // If it exists, increase the count
+                                existingEntry[1]++;
+                            } else {
+                                // If it doesn't exist, create a new entry
+                                cumulativeData[key].push([dateObj.getTime(), 1]);
+                            }
                         }
                     });
                 });
-                
+
                 Object.keys(cumulativeData).forEach(function(key) {
                     cumulativeData[key].sort(function(a, b) {
                         return a[0] - b[0];
                     });
-                    
+
                     for (var i = 1; i < cumulativeData[key].length; i++) {
                         cumulativeData[key][i][1] += cumulativeData[key][i - 1][1];
                     }
@@ -59,13 +80,14 @@
                 createChart();
             }
 
+
             function requestData() {
                 $.ajax({
-                    url: "https://arcportal-ucop-corps.usace.army.mil/esf3/rest/services/TempRoofing/BRMS/FeatureServer/0/query", 
+                    url: "https://arcportal-ucop-corps.usace.army.mil/esf3/rest/services/TempRoofing/BRMS/FeatureServer/0/query",
                     data: {
                         f: 'json',
-                        where: "workstate='Valid'", 
-                        outFields: 'created_date,dateqacomplete,datesenttocontractor,datecontractorcomplete', 
+                        where: "workstate='Valid'",
+                        outFields: 'created_date,dateqacomplete,datesenttocontractor,datecontractorcomplete',
                         returnGeometry: false
                     },
                     success: function(data) {
@@ -80,20 +102,19 @@
             function createChart() {
                 Highcharts.chart('container', {
                     chart: {
-                        type: 'line',
-						zoomType: 'x'
+                        type: 'line'
                     },
-					title: {text: null,
-    enabled: false
-  },
-					credits: {
-						enabled: false
-					  },
-					  exporting: {
-								enabled: false
-							},
+                    title: {
+                        text: 'Production Path'
+                    },
+                    credits: {
+                        enabled: false
+                    },
                     xAxis: {
-                        type: 'datetime'
+                        type: 'datetime',
+                        title: {
+                            text: 'Date'
+                        }
                     },
                     yAxis: {
                         title: {
@@ -107,10 +128,10 @@
                         name: 'QA Complete Date',
                         data: cumulativeData.dateqacomplete
                     }, {
-                        name: 'Sent to DOD Date',
+                        name: 'Sent to Contractor Date',
                         data: cumulativeData.datesenttocontractor
                     }, {
-                        name: 'DOD Complete Date',
+                        name: 'Contractor Complete Date',
                         data: cumulativeData.datecontractorcomplete
                     }]
                 });
@@ -120,4 +141,5 @@
         });
     </script>
 </body>
+
 </html>
