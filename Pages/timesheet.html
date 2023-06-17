@@ -34,6 +34,7 @@
 </head>
 
 <body>
+    <div id="week-number"></div>
     <label for="name">Name:</label>
     <input type="text" id="name" name="name">
 
@@ -52,6 +53,16 @@
     <button id="submit-btn" type="button">Submit</button>
     <div id="result"></div>
     <script>
+        function getWeekNumber(d = new Date()) {
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+            var week1 = new Date(d.getFullYear(), 0, 4);
+            return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        }
+
+        // Set the week number
+        document.getElementById('week-number').textContent = "EM Timesheet Week " + getWeekNumber();
+
         var federalHolidays = ["2023-06-09", "2023-07-04", "2023-12-25"]; // Add more dates as needed
 
         // Function to get dates for the current week
